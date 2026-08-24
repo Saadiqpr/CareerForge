@@ -31,7 +31,7 @@ export default function AppShell({
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm font-medium text-[var(--muted)] transition hover:text-[var(--navy)]"
+                className="text-sm font-medium text-black transition hover:text-[var(--navy)]"
               >
                 {item.label}
               </Link>
@@ -52,10 +52,10 @@ export default function AppShell({
       <div className="mx-auto flex max-w-7xl">
         <aside className="hidden min-h-[calc(100vh-4rem)] w-60 border-r border-[var(--border)] bg-[var(--navy)] p-5 md:block">
           <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white">
               Workspace
             </p>
-            <p className="mt-2 text-sm text-slate-300">
+            <p className="mt-2 text-sm text-white">
               Build your next career move.
             </p>
           </div>
@@ -68,7 +68,7 @@ export default function AppShell({
                 className={`block rounded-lg px-3 py-2.5 text-sm font-medium transition ${
   index === 0
     ? "bg-white/10 text-white"
-    : "text-slate-200 hover:bg-white/10 hover:text-white"
+                    : "text-white hover:bg-white/10"
 }`}
               >
                 {item.label}
@@ -90,7 +90,7 @@ export default function AppShell({
             <Link
               key={item.href}
               href={item.href}
-              className="whitespace-nowrap px-3 py-2 text-sm font-medium text-[var(--muted)]"
+              className="whitespace-nowrap px-3 py-2 text-sm font-medium text-black"
             >
               {item.label}
             </Link>
