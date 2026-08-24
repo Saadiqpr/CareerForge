@@ -17,7 +17,7 @@ export default function CareerPathPage() {
           <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-[var(--navy)] sm:text-5xl">
             Shape your next career move.
           </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--muted)]">
+          <p className="mt-4 max-w-2xl text-base leading-7 text-black">
             Build a clear path from your current experience to the work you want next.
           </p>
         </div>
@@ -26,7 +26,7 @@ export default function CareerPathPage() {
           {milestones.map(([title, description]) => (
             <article key={title} className="rounded-2xl border border-[var(--border)] bg-white p-6 shadow-sm">
               <h2 className="font-[var(--font-space-grotesk)] text-lg font-semibold text-[var(--navy)]">{title}</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{description}</p>
+              <p className="mt-2 text-sm leading-6 text-black">{description}</p>
             </article>
           ))}
         </div>

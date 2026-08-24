@@ -13,7 +13,7 @@ export default function Home() {
             Build a career you can prove.
           </h1>
 
-          <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--muted)]">
+          <p className="mt-4 max-w-2xl text-base leading-7 text-black">
             CareerForge brings your goals, skills, applications, resume,
             and career progress into one focused workspace.
           </p>
@@ -33,7 +33,7 @@ export default function Home() {
                 {title}
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+              <p className="mt-2 text-sm leading-6 text-black">
                 {description}
               </p>
             </article>
