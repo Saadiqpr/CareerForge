@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import { useChat } from "@ai-sdk/react";
 import { Button } from "@/components/ui/button";
 import {
   Bot,
@@ -18,6 +17,12 @@ import {
 import { cn } from "@/lib/utils";
 import MarkdownRenderer from "./MarkdownRenderer";
 import ThinkingIndicator from "./ThinkingIndicator";
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+}
 
 const STARTER_PROMPTS = [
   {
@@ -43,50 +48,17 @@ const STARTER_PROMPTS = [
   },
 ];
 
-function getMessageText(message: any): string {
-  if (!message) return "";
-  if (typeof message === "string") return message;
-  if (typeof message.content === "string" && message.content.length > 0) {
-    return message.content;
-  }
-  if (typeof message.text === "string" && message.text.length > 0) {
-    return message.text;
-  }
-  if (Array.isArray(message.parts) && message.parts.length > 0) {
-    return message.parts
-      .map((part: any) => {
-        if (!part) return "";
-        if (typeof part === "string") return part;
-        if (typeof part.text === "string") return part.text;
-        if (typeof part.content === "string") return part.content;
-        if (typeof part.reasoning === "string") return part.reasoning;
-        return "";
-      })
-      .join("");
-  }
-  return "";
-}
-
 export default function ChatContainer() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState<string>("");
-
-  const {
-    messages,
-    setMessages,
-    sendMessage,
-    stop,
-    status,
-    error,
-    regenerate,
-  } = useChat();
-
-  const isLoading = status === "submitted" || status === "streaming";
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const isAutoScrollingRef = useRef(false);
 
-  // Scroll to bottom helper
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     if (scrollContainerRef.current) {
       isAutoScrollingRef.current = true;
@@ -100,14 +72,11 @@ export default function ChatContainer() {
     }
   }, []);
 
-  // Monitor user scroll position
   const handleScroll = useCallback(() => {
     if (isAutoScrollingRef.current || !scrollContainerRef.current) return;
-
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-    const isAwayFromBottom = distanceFromBottom > 60;
-    setIsUserScrolledUp(isAwayFromBottom);
+    setIsUserScrolledUp(distanceFromBottom > 60);
   }, []);
 
   useEffect(() => {
@@ -126,30 +95,116 @@ export default function ChatContainer() {
   };
 
   const handleClearConversation = () => {
-    if (isLoading) {
-      stop();
+    if (isLoading && abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
     setMessages([]);
+    setError(null);
+    setIsLoading(false);
     setIsUserScrolledUp(false);
+  };
+
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsLoading(false);
+    }
+  };
+
+  const executeSend = async (userPromptText: string, currentHistory: ChatMessage[]) => {
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: userPromptText,
+    };
+
+    const assistantMsgId = `assistant-${Date.now() + 1}`;
+    const initialAssistantMsg: ChatMessage = {
+      id: assistantMsgId,
+      role: "assistant",
+      content: "",
+    };
+
+    const updatedHistory = [...currentHistory, userMsg];
+    setMessages([...updatedHistory, initialAssistantMsg]);
+    setIsLoading(true);
+    setError(null);
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: updatedHistory.map((m) => ({ role: m.role, content: m.content })),
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const errorJson = await response.json().catch(() => ({}));
+        throw new Error(errorJson.error || `HTTP error! status: ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error("No response body returned from server.");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        accumulatedText += chunk;
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMsgId ? { ...msg, content: accumulatedText } : msg
+          )
+        );
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "AbortError") {
+        return;
+      }
+      const errMsg = err instanceof Error ? err.message : "Failed to generate coaching response.";
+      setError(errMsg);
+    } finally {
+      setIsLoading(false);
+      abortControllerRef.current = null;
+    }
   };
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const trimmed = (input || "").trim();
+    const trimmed = input.trim();
     if (!trimmed || isLoading) return;
 
     setInput("");
-    sendMessage({ text: trimmed });
+    executeSend(trimmed, messages);
   };
 
-  const typedMessages = (messages || []) as any[];
-  const lastMessage = typedMessages[typedMessages.length - 1];
-  const lastMessageText = lastMessage ? getMessageText(lastMessage) : "";
+  const handleRetry = () => {
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    if (!lastUser) return;
+    const historyWithoutFailed = messages.filter(
+      (m, idx) => !(idx === messages.length - 1 && m.role === "assistant" && !m.content)
+    );
+    executeSend(lastUser.content, historyWithoutFailed.slice(0, -1));
+  };
+
+  const lastMessage = messages[messages.length - 1];
   const isThinking =
     isLoading &&
-    (typedMessages.length === 0 ||
+    (messages.length === 0 ||
       lastMessage?.role === "user" ||
-      (lastMessage?.role === "assistant" && !lastMessageText.trim()));
+      (lastMessage?.role === "assistant" && !lastMessage.content.trim()));
 
   return (
     <div className="relative flex flex-col rounded-3xl border border-white/[0.1] bg-[#0c1322]/80 backdrop-blur-xl shadow-2xl overflow-hidden h-[calc(100vh-13rem)] min-h-[560px] max-h-[850px]">
@@ -176,7 +231,7 @@ export default function ChatContainer() {
           </div>
         </div>
 
-        {typedMessages.length > 0 && (
+        {messages.length > 0 && (
           <Button
             variant="ghost"
             size="sm"
@@ -196,7 +251,7 @@ export default function ChatContainer() {
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 scroll-smooth"
       >
-        {typedMessages.length === 0 ? (
+        {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 sm:py-12 text-center animate-fade-in">
             <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 via-indigo-500/20 to-purple-500/20 border border-cyan-500/30 text-cyan-300 mb-4 shadow-lg shadow-cyan-500/10">
               <Sparkles className="h-7 w-7 text-cyan-400 animate-pulse-slow" />
@@ -238,17 +293,15 @@ export default function ChatContainer() {
             </div>
           </div>
         ) : (
-          typedMessages.map((message, idx) => {
+          messages.map((message) => {
             const isUser = message.role === "user";
-            const textContent = getMessageText(message);
-
-            if (!isUser && !textContent.trim() && isLoading && idx === typedMessages.length - 1) {
+            if (!isUser && !message.content.trim() && isLoading) {
               return null;
             }
 
             return (
               <div
-                key={message.id || idx}
+                key={message.id}
                 className={cn(
                   "flex gap-3 max-w-[92%] sm:max-w-[85%]",
                   isUser ? "ml-auto flex-row-reverse" : "mr-auto"
@@ -278,10 +331,10 @@ export default function ChatContainer() {
                 >
                   {isUser ? (
                     <div className="whitespace-pre-wrap break-words text-white">
-                      {textContent}
+                      {message.content}
                     </div>
                   ) : (
-                    <MarkdownRenderer content={textContent || "..."} />
+                    <MarkdownRenderer content={message.content} />
                   )}
                 </div>
               </div>
@@ -296,13 +349,13 @@ export default function ChatContainer() {
             <div className="flex items-center gap-2.5">
               <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
               <span className="text-xs sm:text-sm">
-                {error.message || "Failed to generate response. Retrying with fallback..."}
+                {error}
               </span>
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => regenerate()}
+              onClick={handleRetry}
               className="gap-1 bg-white/[0.05] hover:bg-rose-500/20 text-rose-200 border-rose-500/30 shrink-0 ml-2"
             >
               <RefreshCw className="h-3.5 w-3.5" />
@@ -313,7 +366,7 @@ export default function ChatContainer() {
       </div>
 
       {/* Floating Jump to Latest */}
-      {isUserScrolledUp && typedMessages.length > 0 && (
+      {isUserScrolledUp && messages.length > 0 && (
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 animate-fade-in">
           <Button
             type="button"
@@ -341,7 +394,7 @@ export default function ChatContainer() {
           {isLoading ? (
             <Button
               type="button"
-              onClick={() => stop()}
+              onClick={handleStop}
               className="gap-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl shrink-0 px-4 h-11 shadow-lg shadow-rose-600/30"
               title="Stop generation"
             >
