@@ -79,9 +79,7 @@ export default function ChatContainer() {
     status,
     error,
     regenerate,
-  } = useChat({
-    api: "/api/chat",
-  });
+  } = useChat();
 
   const isLoading = status === "submitted" || status === "streaming";
 

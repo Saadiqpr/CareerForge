@@ -58,7 +58,6 @@ export async function POST(req: Request) {
       system: AI_COACH_CONFIG.systemPrompt,
       messages: modelMessages,
       temperature: AI_COACH_CONFIG.temperature,
-      maxTokens: AI_COACH_CONFIG.maxTokens,
     });
 
     return result.toUIMessageStreamResponse();
