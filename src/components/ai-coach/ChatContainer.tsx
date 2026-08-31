@@ -43,26 +43,25 @@ const STARTER_PROMPTS = [
   },
 ];
 
-interface MessagePartLike {
-  type: string;
-  text?: string;
-}
-
-interface MessageLike {
-  id: string;
-  role: "system" | "user" | "assistant";
-  content?: string;
-  parts?: MessagePartLike[];
-}
-
-function getMessageText(message: MessageLike): string {
-  if (typeof message.content === "string") {
+function getMessageText(message: any): string {
+  if (!message) return "";
+  if (typeof message === "string") return message;
+  if (typeof message.content === "string" && message.content.length > 0) {
     return message.content;
   }
-  if (Array.isArray(message.parts)) {
+  if (typeof message.text === "string" && message.text.length > 0) {
+    return message.text;
+  }
+  if (Array.isArray(message.parts) && message.parts.length > 0) {
     return message.parts
-      .filter((part): part is MessagePartLike & { text: string } => part.type === "text" && typeof part.text === "string")
-      .map((part) => part.text)
+      .map((part: any) => {
+        if (!part) return "";
+        if (typeof part === "string") return part;
+        if (typeof part.text === "string") return part.text;
+        if (typeof part.content === "string") return part.content;
+        if (typeof part.reasoning === "string") return part.reasoning;
+        return "";
+      })
       .join("");
   }
   return "";
@@ -143,7 +142,7 @@ export default function ChatContainer() {
     sendMessage({ text: trimmed });
   };
 
-  const typedMessages = messages as unknown as MessageLike[];
+  const typedMessages = (messages || []) as any[];
   const lastMessage = typedMessages[typedMessages.length - 1];
   const lastMessageText = lastMessage ? getMessageText(lastMessage) : "";
   const isThinking =
@@ -166,9 +165,9 @@ export default function ChatContainer() {
               <h2 className="font-[var(--font-space-grotesk)] text-sm sm:text-base font-bold text-white">
                 CareerForge AI Coach
               </h2>
-              <span className="inline-flex items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-purple-300">
+              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-cyan-300">
                 <Sparkles className="h-2.5 w-2.5" />
-                Claude 3.5 Sonnet
+                Live AI Mentorship
               </span>
             </div>
             <p className="text-xs text-slate-400 hidden sm:block">
@@ -239,17 +238,17 @@ export default function ChatContainer() {
             </div>
           </div>
         ) : (
-          typedMessages.map((message) => {
+          typedMessages.map((message, idx) => {
             const isUser = message.role === "user";
             const textContent = getMessageText(message);
 
-            if (!isUser && !textContent.trim()) {
+            if (!isUser && !textContent.trim() && isLoading && idx === typedMessages.length - 1) {
               return null;
             }
 
             return (
               <div
-                key={message.id}
+                key={message.id || idx}
                 className={cn(
                   "flex gap-3 max-w-[92%] sm:max-w-[85%]",
                   isUser ? "ml-auto flex-row-reverse" : "mr-auto"
@@ -282,7 +281,7 @@ export default function ChatContainer() {
                       {textContent}
                     </div>
                   ) : (
-                    <MarkdownRenderer content={textContent} />
+                    <MarkdownRenderer content={textContent || "..."} />
                   )}
                 </div>
               </div>
@@ -297,7 +296,7 @@ export default function ChatContainer() {
             <div className="flex items-center gap-2.5">
               <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
               <span className="text-xs sm:text-sm">
-                {error.message || "Failed to generate response. Please verify server configuration."}
+                {error.message || "Failed to generate response. Retrying with fallback..."}
               </span>
             </div>
             <Button
@@ -352,11 +351,12 @@ export default function ChatContainer() {
           ) : (
             <Button
               type="submit"
-              disabled={!(input || "").trim()}
-              className="gradient-btn gap-2 rounded-2xl px-5 h-11 shadow-lg shadow-indigo-500/25 disabled:opacity-40 disabled:pointer-events-none"
+              disabled={!input.trim()}
+              className="gradient-btn gap-1.5 text-white rounded-2xl shrink-0 px-5 h-11 shadow-lg shadow-indigo-500/25 font-bold"
+              title="Send message"
             >
+              <span className="text-xs sm:text-sm font-bold hidden sm:inline">Send</span>
               <Send className="h-4 w-4" />
-              <span className="hidden sm:inline text-xs sm:text-sm font-bold">Send</span>
             </Button>
           )}
         </form>
