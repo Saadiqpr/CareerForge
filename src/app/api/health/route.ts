@@ -11,7 +11,7 @@ export async function GET() {
 
   const healthData = {
     status: "healthy",
-    uptimeSeconds: Math.floor(process.uptime ? process.uptime() : 120),
+    uptimeSeconds: Math.floor(typeof process !== "undefined" && typeof process.uptime === "function" ? process.uptime() : 120),
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || "development",
     version: "1.0.0",
