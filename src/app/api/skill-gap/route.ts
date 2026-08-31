@@ -1,5 +1,6 @@
 import { generateText } from "ai";
-import { getActiveLanguageModel } from "@/lib/ai/provider";
+import { getActiveLanguageModel, getAIProviderInfo } from "@/lib/ai/provider";
+import { generateGeminiJson } from "@/lib/ai/gemini";
 
 export const maxDuration = 30;
 
@@ -21,11 +22,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const { model, info } = getActiveLanguageModel();
+    const providerInfo = getAIProviderInfo();
 
-    if (model) {
-      try {
-        const prompt = `You are a Principal Engineering Career Advisor and Technical Competency Architect.
+    const prompt = `You are a Principal Engineering Career Advisor and Technical Competency Architect.
 Analyze the skill gap for a candidate aiming for the role of "${targetRole}" at "${experienceLevel}" level.
 Candidate's current skills: ${currentSkills.length > 0 ? currentSkills.join(", ") : "None specified"}.
 
@@ -56,6 +55,31 @@ Strictly return a valid JSON object matching this structure without markdown cod
   ]
 }`;
 
+    // 1. Google Gemini Native JSON Mode
+    if (providerInfo.type === "gemini" && providerInfo.apiKey) {
+      try {
+        const jsonStr = await generateGeminiJson({
+          apiKey: providerInfo.apiKey,
+          model: providerInfo.modelName,
+          prompt,
+          temperature: 0.3,
+        });
+
+        const cleanJson = jsonStr.replace(/```json\n?|\n?```/g, "").trim();
+        const parsed = JSON.parse(cleanJson);
+        return new Response(JSON.stringify(parsed), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (geminiErr) {
+        console.error("Google Gemini skill gap error, trying fallback:", geminiErr);
+      }
+    }
+
+    // 2. AgentRouter / OpenAI Compatible
+    const { model, info } = getActiveLanguageModel();
+    if (model) {
+      try {
         const result = await generateText({
           model,
           prompt,
@@ -73,7 +97,7 @@ Strictly return a valid JSON object matching this structure without markdown cod
       }
     }
 
-    // High-quality deterministic fallback
+    // 3. High-quality deterministic fallback
     const fallbackResponse = {
       matchPercentage: Math.min(90, Math.max(45, currentSkills.length * 12 + 35)),
       summary: `Your profile demonstrates foundational strengths for ${targetRole}. Bridging architecture patterns, advanced accessibility (WCAG AA), and full-stack performance optimization will position you as a top candidate.`,
@@ -115,7 +139,7 @@ Strictly return a valid JSON object matching this structure without markdown cod
           deliverable: "Deploy with continuous monitoring, automated Vitest coverage, and rollback checklist."
         }
       ],
-      isFallback: !info.isConfigured
+      isFallback: !providerInfo.isConfigured
     };
 
     return new Response(JSON.stringify(fallbackResponse), {

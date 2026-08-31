@@ -1,6 +1,7 @@
 import { streamText } from "ai";
 import { AI_COACH_CONFIG } from "@/lib/ai/coach-config";
-import { getActiveLanguageModel } from "@/lib/ai/provider";
+import { getActiveLanguageModel, getAIProviderInfo } from "@/lib/ai/provider";
+import { streamGeminiChat } from "@/lib/ai/gemini";
 
 export const maxDuration = 30;
 
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { model, info } = getActiveLanguageModel();
+    const providerInfo = getAIProviderInfo();
 
     // Extract formatted message history
     const formattedMessages = messages.map((m: any) => ({
@@ -24,6 +25,30 @@ export async function POST(req: Request) {
       content: typeof m.content === "string" ? m.content : (m.text || ""),
     }));
 
+    // 1. Google Gemini Native Stream (Direct Google AI Studio / Gemini Pro Plan API)
+    if (providerInfo.type === "gemini" && providerInfo.apiKey) {
+      try {
+        const stream = await streamGeminiChat({
+          apiKey: providerInfo.apiKey,
+          model: providerInfo.modelName,
+          systemPrompt: AI_COACH_CONFIG.systemPrompt,
+          messages: formattedMessages,
+          temperature: AI_COACH_CONFIG.temperature,
+        });
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache",
+          },
+        });
+      } catch (geminiErr) {
+        console.error("Google Gemini stream error, attempting secondary fallback:", geminiErr);
+      }
+    }
+
+    // 2. AgentRouter / Anthropic / OpenAI Compatible Stream
+    const { model } = getActiveLanguageModel();
     if (model) {
       try {
         const result = streamText({
@@ -35,15 +60,15 @@ export async function POST(req: Request) {
 
         return result.toTextStreamResponse();
       } catch (streamErr) {
-        console.error("Live LLM stream error, falling back to heuristic engine:", streamErr);
+        console.error("LLM stream error, falling back to heuristic engine:", streamErr);
       }
     }
 
-    // Fallback stream for offline / demonstration
+    // 3. Fallback Stream for offline / demonstration
     const lastMsg = formattedMessages[formattedMessages.length - 1]?.content || "How do I advance my career?";
     const fallbackText = `### Career Coaching Strategy & Recommendations
 
-I analyzed your question: **"${lastMsg.slice(0, 120)}"**
+I analyzed your goal: **"${lastMsg.slice(0, 120)}"**
 
 ---
 

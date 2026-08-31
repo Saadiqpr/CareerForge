@@ -1,5 +1,6 @@
 import { generateText } from "ai";
-import { getActiveLanguageModel } from "@/lib/ai/provider";
+import { getActiveLanguageModel, getAIProviderInfo } from "@/lib/ai/provider";
+import { generateGeminiJson } from "@/lib/ai/gemini";
 
 export const maxDuration = 30;
 
@@ -21,12 +22,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const { model, info } = getActiveLanguageModel();
+    const providerInfo = getAIProviderInfo();
 
-    // If API model is available (Google Gemini or AgentRouter), run LLM optimization
-    if (model) {
-      try {
-        const prompt = `You are an expert technical resume coach and ATS optimization specialist.
+    const prompt = `You are an expert technical resume coach and ATS optimization specialist.
 Task: Optimize the following resume bullet point for a ${targetRole} in the ${industry} industry.
 
 Input bullet: "${bullet}"
@@ -44,6 +42,31 @@ Strictly return a valid JSON object with the following structure without markdow
   ]
 }`;
 
+    // 1. Google Gemini Native JSON Mode
+    if (providerInfo.type === "gemini" && providerInfo.apiKey) {
+      try {
+        const jsonStr = await generateGeminiJson({
+          apiKey: providerInfo.apiKey,
+          model: providerInfo.modelName,
+          prompt,
+          temperature: 0.3,
+        });
+
+        const cleanJson = jsonStr.replace(/```json\n?|\n?```/g, "").trim();
+        const parsed = JSON.parse(cleanJson);
+        return new Response(JSON.stringify(parsed), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      } catch (geminiErr) {
+        console.error("Google Gemini resume optimize error, trying fallback model:", geminiErr);
+      }
+    }
+
+    // 2. AgentRouter / OpenAI Compatible
+    const { model, info } = getActiveLanguageModel();
+    if (model) {
+      try {
         const result = await generateText({
           model,
           prompt,
@@ -61,7 +84,7 @@ Strictly return a valid JSON object with the following structure without markdow
       }
     }
 
-    // High-quality deterministic fallback heuristic for offline/demo resilience
+    // 3. High-quality deterministic fallback
     const trimmed = bullet.trim();
     const actionVerbs = ["Architected", "Spearheaded", "Engineered", "Optimized", "Delivered", "Pioneered"];
     const selectedVerb = actionVerbs[Math.abs(trimmed.length) % actionVerbs.length];
@@ -76,7 +99,7 @@ Strictly return a valid JSON object with the following structure without markdow
         `Designed and scaled resilient full-stack systems, accelerating feature delivery cycles by 2.4x.`,
         `Led cross-functional modernization of legacy services, reducing cloud infrastructure overhead by 22%.`
       ],
-      isFallback: !info.isConfigured
+      isFallback: !providerInfo.isConfigured
     };
 
     return new Response(JSON.stringify(fallbackResponse), {
