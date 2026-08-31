@@ -1,6 +1,5 @@
 import { generateText } from "ai";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { getCoachModelName } from "@/lib/ai/coach-config";
+import { getActiveLanguageModel } from "@/lib/ai/provider";
 
 export const maxDuration = 30;
 
@@ -22,20 +21,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const rawApiKey = process.env.AGENTROUTER_API_KEY;
-    const apiKey = rawApiKey?.trim();
+    const { model, info } = getActiveLanguageModel();
 
-    // If API key is available, run LLM optimization
-    if (apiKey) {
+    // If API model is available (Google Gemini or AgentRouter), run LLM optimization
+    if (model) {
       try {
-        const agentrouter = createOpenAICompatible({
-          name: "agentrouter",
-          apiKey: apiKey,
-          baseURL: process.env.AGENTROUTER_BASE_URL || "https://co.agentrouter.org/v1",
-        });
-
-        const modelName = getCoachModelName();
-
         const prompt = `You are an expert technical resume coach and ATS optimization specialist.
 Task: Optimize the following resume bullet point for a ${targetRole} in the ${industry} industry.
 
@@ -55,7 +45,7 @@ Strictly return a valid JSON object with the following structure without markdow
 }`;
 
         const result = await generateText({
-          model: agentrouter(modelName),
+          model,
           prompt,
           temperature: 0.4,
         });
@@ -86,7 +76,7 @@ Strictly return a valid JSON object with the following structure without markdow
         `Designed and scaled resilient full-stack systems, accelerating feature delivery cycles by 2.4x.`,
         `Led cross-functional modernization of legacy services, reducing cloud infrastructure overhead by 22%.`
       ],
-      isFallback: !apiKey
+      isFallback: !info.isConfigured
     };
 
     return new Response(JSON.stringify(fallbackResponse), {

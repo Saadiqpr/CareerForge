@@ -1,5 +1,6 @@
 import AppShell from "@/components/AppShell";
 import { Activity, Server, CheckCircle2, ShieldCheck, Cpu, Radio, Zap, Globe } from "lucide-react";
+import { getAIProviderInfo } from "@/lib/ai/provider";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,6 @@ type HealthData = {
       status: string;
       provider: string;
       model: string;
-      baseUrl: string;
       hasKey: boolean;
     };
     clientFeatures: Record<string, string>;
@@ -26,8 +26,7 @@ type HealthData = {
 };
 
 async function getHealthData(): Promise<HealthData> {
-  const rawKey = process.env.AGENTROUTER_API_KEY;
-  const hasApiKey = Boolean(rawKey && rawKey.trim().length > 0);
+  const providerInfo = getAIProviderInfo();
 
   return {
     status: "healthy",
@@ -41,11 +40,10 @@ async function getHealthData(): Promise<HealthData> {
         latencyMs: 12,
       },
       aiProvider: {
-        status: hasApiKey ? "configured" : "fallback_mode",
-        provider: "AgentRouter / Anthropic (OpenAI-Compatible)",
-        model: process.env.AGENTROUTER_MODEL || "claude-3-5-sonnet-20241022",
-        baseUrl: "https://co.agentrouter.org/v1",
-        hasKey: hasApiKey,
+        status: providerInfo.isConfigured ? "configured" : "fallback_mode",
+        provider: providerInfo.providerName,
+        model: providerInfo.modelName,
+        hasKey: providerInfo.isConfigured,
       },
       clientFeatures: {
         "AI Career Coach": "operational",
@@ -111,7 +109,7 @@ export default async function HealthPage() {
               </span>
             </div>
             <p className="text-2xl font-black text-white truncate">
-              {data.services.aiProvider.hasKey ? "Claude 3.5" : "Resilient Fallback"}
+              {data.services.aiProvider.provider}
             </p>
             <p className="mt-1 text-xs text-purple-300 truncate">
               {data.services.aiProvider.model}

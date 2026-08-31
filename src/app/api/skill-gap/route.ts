@@ -1,6 +1,5 @@
 import { generateText } from "ai";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { getCoachModelName } from "@/lib/ai/coach-config";
+import { getActiveLanguageModel } from "@/lib/ai/provider";
 
 export const maxDuration = 30;
 
@@ -22,19 +21,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const rawApiKey = process.env.AGENTROUTER_API_KEY;
-    const apiKey = rawApiKey?.trim();
+    const { model, info } = getActiveLanguageModel();
 
-    if (apiKey) {
+    if (model) {
       try {
-        const agentrouter = createOpenAICompatible({
-          name: "agentrouter",
-          apiKey: apiKey,
-          baseURL: process.env.AGENTROUTER_BASE_URL || "https://co.agentrouter.org/v1",
-        });
-
-        const modelName = getCoachModelName();
-
         const prompt = `You are a Principal Engineering Career Advisor and Technical Competency Architect.
 Analyze the skill gap for a candidate aiming for the role of "${targetRole}" at "${experienceLevel}" level.
 Candidate's current skills: ${currentSkills.length > 0 ? currentSkills.join(", ") : "None specified"}.
@@ -67,7 +57,7 @@ Strictly return a valid JSON object matching this structure without markdown cod
 }`;
 
         const result = await generateText({
-          model: agentrouter(modelName),
+          model,
           prompt,
           temperature: 0.3,
         });
@@ -125,7 +115,7 @@ Strictly return a valid JSON object matching this structure without markdown cod
           deliverable: "Deploy with continuous monitoring, automated Vitest coverage, and rollback checklist."
         }
       ],
-      isFallback: !apiKey
+      isFallback: !info.isConfigured
     };
 
     return new Response(JSON.stringify(fallbackResponse), {

@@ -1,12 +1,10 @@
+import { getAIProviderInfo } from "@/lib/ai/provider";
+
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const startTime = Date.now();
-  const rawKey = process.env.AGENTROUTER_API_KEY;
-  const hasApiKey = Boolean(rawKey && rawKey.trim().length > 0);
-  const modelName = process.env.AGENTROUTER_MODEL || "claude-3-5-sonnet-20241022";
-  const baseUrl = process.env.AGENTROUTER_BASE_URL || "https://co.agentrouter.org/v1";
-
+  const providerInfo = getAIProviderInfo();
   const latencyMs = Date.now() - startTime;
 
   const healthData = {
@@ -21,11 +19,10 @@ export async function GET() {
         latencyMs,
       },
       aiProvider: {
-        status: hasApiKey ? "configured" : "fallback_mode",
-        provider: "AgentRouter (OpenAI-Compatible)",
-        model: modelName,
-        baseUrl,
-        hasKey: hasApiKey,
+        status: providerInfo.isConfigured ? "configured" : "fallback_mode",
+        provider: providerInfo.providerName,
+        model: providerInfo.modelName,
+        hasKey: providerInfo.isConfigured,
       },
       clientFeatures: {
         aiCoach: "operational",
