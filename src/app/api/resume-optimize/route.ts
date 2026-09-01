@@ -1,4 +1,4 @@
-import { tool, zodSchema, generateText } from "ai";
+import { tool, generateText } from "ai";
 import { z } from "zod";
 import { getActiveLanguageModel, getAIProviderInfo } from "@/lib/ai/provider";
 import { generateGeminiJson } from "@/lib/ai/gemini";
@@ -8,8 +8,8 @@ export const maxDuration = 30;
 // 1. Zod input schema for the server-side AI SDK tool
 export const optimizeBulletInputSchema = z.object({
   bullet: z.string().min(1, "Resume bullet point is required"),
-  targetRole: z.string().optional().default("Software Engineer"),
-  industry: z.string().optional().default("Tech"),
+  targetRole: z.string().optional(),
+  industry: z.string().optional(),
 });
 
 export type OptimizeBulletInput = z.infer<typeof optimizeBulletInputSchema>;
@@ -27,8 +27,8 @@ export interface OptimizeBulletOutput {
 // 2. Server-side Vercel AI SDK Tool definition using tool()
 export const optimizeBullet = tool({
   description: "Optimizes a resume bullet point for ATS impact, power verbs, and quantified metrics.",
-  parameters: zodSchema(optimizeBulletInputSchema) as any,
-  execute: async ({ bullet, targetRole = "Software Engineer", industry = "Tech" }: OptimizeBulletInput): Promise<OptimizeBulletOutput> => {
+  parameters: optimizeBulletInputSchema,
+  execute: async ({ bullet, targetRole = "Software Engineer", industry = "Tech" }) => {
     const providerInfo = getAIProviderInfo();
 
     const prompt = `You are an expert technical resume coach and ATS optimization specialist.
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { bullet, targetRole, industry } = parsed.data;
+    const { bullet, targetRole = "Software Engineer", industry = "Tech" } = parsed.data;
 
     // Check if caller requests standard JSON (e.g. legacy/testing) or tool event stream
     const acceptHeader = req.headers.get("accept") || "";
