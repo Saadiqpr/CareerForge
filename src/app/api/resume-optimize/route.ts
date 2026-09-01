@@ -1,4 +1,4 @@
-import { tool, generateText } from "ai";
+import { tool, zodSchema, generateText } from "ai";
 import { z } from "zod";
 import { getActiveLanguageModel, getAIProviderInfo } from "@/lib/ai/provider";
 import { generateGeminiJson } from "@/lib/ai/gemini";
@@ -27,8 +27,7 @@ export interface OptimizeBulletOutput {
 // 2. Server-side Vercel AI SDK Tool definition using tool()
 export const optimizeBullet = tool({
   description: "Optimizes a resume bullet point for ATS impact, power verbs, and quantified metrics.",
-  inputSchema: optimizeBulletInputSchema,
-  parameters: optimizeBulletInputSchema,
+  parameters: zodSchema(optimizeBulletInputSchema) as any,
   execute: async ({ bullet, targetRole = "Software Engineer", industry = "Tech" }: OptimizeBulletInput): Promise<OptimizeBulletOutput> => {
     const providerInfo = getAIProviderInfo();
 
