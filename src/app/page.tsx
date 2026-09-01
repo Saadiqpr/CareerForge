@@ -1,5 +1,6 @@
 import AppShell from "@/components/AppShell";
 import Link from "next/link";
+import SignatureHero from "@/components/hero/SignatureHero";
 import {
   Sparkles,
   Target,
@@ -82,58 +83,20 @@ export default function Home() {
   return (
     <AppShell>
       <section className="space-y-8 animate-fade-in">
-        {/* Fancy Hero Banner */}
-        <div className="relative overflow-hidden rounded-3xl border border-white/[0.1] bg-gradient-to-br from-[#0e172e] via-[#090e1f] to-[#120f26] p-6 sm:p-10 shadow-2xl">
-          {/* Ambient Lighting Orbs */}
-          <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />
+        {/* FE-AA3: Signature Fullscreen GLSL Shader Hero */}
+        <SignatureHero />
 
-          <div className="relative z-10">
-            {/* Top Shimmer Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1 text-xs font-semibold text-cyan-300 shadow-sm mb-4">
-              <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
-              <span>Frontend AI Engineering Capstone Release</span>
+        {/* Live Metrics Row */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 rounded-2xl border border-white/[0.08] bg-[#0c1322]/80 backdrop-blur-md p-5 shadow-lg">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
+              <TrendingUp className="h-4 w-4" />
             </div>
-
-            {/* Main Headline */}
-            <h1 className="max-w-3xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]">
-              Build a career you can <span className="gradient-text-vibrant font-black">prove</span>.
-            </h1>
-
-            <p className="mt-4 max-w-2xl text-sm sm:text-base leading-relaxed text-slate-300 font-normal">
-              CareerForge brings intelligent career coaching, ATS resume optimization, skill gap analysis, and interview tracking into one unified, accessible production workspace.
-            </p>
-
-            {/* Action Buttons */}
-            <div className="mt-7 flex flex-wrap items-center gap-3.5">
-              <Link
-                href="/ai-coach"
-                className="gradient-btn inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold shadow-lg"
-              >
-                <Bot className="h-4 w-4 text-cyan-300" />
-                <span>Launch AI Coach</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/resume"
-                className="inline-flex items-center gap-2 rounded-xl border border-white/[0.15] bg-white/[0.05] px-5 py-3 text-sm font-semibold text-slate-200 backdrop-blur-sm transition hover:bg-white/[0.1] hover:border-cyan-500/40 hover:text-white"
-              >
-                <FileText className="h-4 w-4 text-cyan-400" />
-                <span>Optimize Resume</span>
-              </Link>
+            <div>
+              <p className="text-xs font-bold text-white">98.4% ATS</p>
+              <p className="text-[10px] text-slate-400">Score Impact Rate</p>
             </div>
-
-            {/* Live Metrics Row */}
-            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4 border-t border-white/[0.08] pt-6">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
-                  <TrendingUp className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-white">98.4% ATS</p>
-                  <p className="text-[10px] text-slate-400">Score Impact Rate</p>
-                </div>
-              </div>
+          </div>
 
               <div className="flex items-center gap-2.5">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
@@ -164,8 +127,6 @@ export default function Home() {
                   <p className="text-[10px] text-slate-400">Career Targets</p>
                 </div>
               </div>
-            </div>
-          </div>
         </div>
 
         {/* Feature Tools Grid */}

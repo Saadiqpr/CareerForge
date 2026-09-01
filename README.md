@@ -180,6 +180,126 @@ careerforge/
 
 ---
 
+### 5. Signature Hero: A Fullscreen Procedural GLSL Shader (`/`) — FE-AA3 Specification
+
+The CareerForge landing hero features a custom, GPU-accelerated **procedural GLSL fragment shader** running on a fullscreen quad behind high-contrast typography, establishing a unique visual identity that templates cannot replicate.
+
+#### 🌌 Shader Mental Model & Architecture
+The shader is structured into distinct, modular mathematical stages executed in parallel across millions of GPU pixels:
+
+```glsl
+// ============================================================================
+// CareerForge Signature Fragment Shader (GLSL)
+// ============================================================================
+uniform float u_time;        // Continuous time driving fluid harmonic drift
+uniform vec2 u_resolution;   // Canvas pixel dimensions for aspect ratio normalization
+uniform vec2 u_mouse;        // Smoothly lerped normalized pointer coords [-1.0, 1.0]
+varying vec2 vUv;
+
+// SECTION 1: Simplex Noise Permutations
+// Generates continuous, organic pseudorandom scalar fields without grid artifacts
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
+
+float snoise(vec2 v) {
+  const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+  vec2 i  = floor(v + dot(v, C.yy));
+  vec2 x0 = v - i + dot(i, C.xx);
+  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+  vec4 x12 = x0.xyxy + C.xxzz;
+  x12.xy -= i1;
+  i = mod289(i);
+  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+  vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+  m = m * m; m = m * m;
+  vec3 x = 2.0 * fract(p * C.www) - 1.0;
+  vec3 h = abs(x) - 0.5;
+  vec3 ox = floor(x + 0.5);
+  vec3 a0 = x - ox;
+  m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+  vec3 g;
+  g.x  = a0.x * x0.x + h.x * x0.y;
+  g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+  return 130.0 * dot(m, g);
+}
+
+// SECTION 2: 4-Octave Rotated Fractal Brownian Motion (FBM)
+// Iterates multiple octaves with 2D rotational coordinate warping to simulate fluid turbulence
+float fbm(vec2 p) {
+  float f = 0.0;
+  float w = 0.5;
+  mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+  for (int i = 0; i < 4; i++) {
+    f += w * snoise(p);
+    p = rot * p * 2.0 + vec2(100.0);
+    w *= 0.5;
+  }
+  return f;
+}
+
+// SECTION 3: Film Grain Pseudo-Random Hash
+// Adds subtle high-frequency dither to eliminate color banding on 8-bit displays
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+  // SECTION 4: Aspect-Ratio Corrected Center Origin UV
+  // Normalizes screen space so circles stay round regardless of viewport aspect ratio
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / min(u_resolution.x, u_resolution.y);
+
+  // SECTION 5: Gravitational Cursor Field Deflection
+  // Computes distance vector to mouse and pulls local coordinates smoothly toward cursor
+  vec2 mouseVec = uv - u_mouse;
+  float mouseDist = length(mouseVec);
+  float mouseInfluence = exp(-mouseDist * 2.8) * 0.42;
+  vec2 mouseDisplacement = normalize(mouseVec + 0.001) * mouseInfluence;
+  vec2 warpedUv = uv + mouseDisplacement;
+
+  // SECTION 6: Multi-Stage Domain Warping (q & r vectors)
+  // Recursively feeds FBM outputs back into coordinate domains for organic aurora ribbons
+  float t = u_time * 0.16;
+  vec2 q = vec2(fbm(warpedUv + vec2(0.0, 0.0) + t * 0.22), fbm(warpedUv + vec2(5.2, 1.3) + t * 0.28));
+  vec2 r = vec2(fbm(warpedUv + 4.0 * q + vec2(1.7, 9.2) + t * 0.35), fbm(warpedUv + 4.0 * q + vec2(8.3, 2.8) + t * 0.30));
+  float f = fbm(warpedUv + 4.0 * r);
+
+  // SECTION 7: Bespoke Chromatic Palette Mapping
+  // Blends cosmic deep navy (#050d1a), cyber cyan (#06b6d4), electric violet (#8b5cf6), and solar amber (#f59e0b)
+  vec3 colBase = vec3(0.02, 0.05, 0.10);
+  vec3 colCyan = vec3(0.02, 0.71, 0.83);
+  vec3 colViolet = vec3(0.55, 0.36, 0.96);
+  vec3 colAmber = vec3(0.96, 0.62, 0.04);
+  vec3 colEmerald = vec3(0.06, 0.73, 0.51);
+
+  vec3 color = mix(colBase, colCyan, clamp(length(q), 0.0, 1.0));
+  color = mix(color, colViolet, clamp(length(r.x), 0.0, 1.0));
+  color = mix(color, colAmber, clamp(pow(f, 2.4) * 1.8, 0.0, 1.0));
+  color += colEmerald * (mouseInfluence * 0.65) + colCyan * (exp(-mouseDist * 4.2) * 0.35);
+
+  // SECTION 8: Grain & Contrast-Safe Vignette
+  // Protects WCAG 2.1 AA text readability over the hero headline and CTA elements
+  float grain = (hash(gl_FragCoord.xy + u_time * 5.0) - 0.5) * 0.035;
+  color += grain;
+  float vignette = 1.0 - smoothstep(0.4, 1.4, length(uv));
+  color *= (0.75 + 0.25 * vignette);
+  float bottomFade = smoothstep(-0.6, 0.6, uv.y);
+  color = mix(vec3(0.024, 0.047, 0.094), color, bottomFade * 0.85 + 0.15);
+
+  gl_FragColor = vec4(color, 1.0);
+}
+```
+
+#### 🛡️ Performance & Accessibility Strategy (One-Liner)
+> **One-Liner**: *Capped at `dpr <= 2.0`, paused automatically when scrolled out of view (`IntersectionObserver`) or when the tab is hidden (`document.hidden`), and gracefully falls back to a static CSS gradient under `prefers-reduced-motion: reduce` or non-WebGL environments.*
+
+#### 🎙️ Mentor Walkthrough Notes
+- **Why Domain Warping?** Rather than rendering simple sine waves, domain warping recursively modulates sampling coordinates (`fbm(p + 4*fbm(p))`), creating self-organizing vortex filaments that look like atmospheric fluid dynamics.
+- **Why Smooth Pointer Damping?** Raw mouse coordinates create harsh jumps; `THREE.MathUtils.lerp(current, target, delta * 6.0)` provides organic, liquid inertia.
+- **Why OKLCH-aligned Contrast Masking?** The background shader is tuned with a central luminance dip and bottom dark fade (`#060c18`) so overlay text passes WCAG 2.1 AA contrast requirements without requiring heavy dark boxes.
+
+---
+
 ## 🧪 Testing & Confidence
 
 CareerForge includes comprehensive automated tests built with **Vitest** and **React Testing Library** achieving **>50% component and route coverage**.
@@ -193,13 +313,14 @@ npm run test:coverage
 ```
 
 ### Test Coverage Highlights:
+- ✅ `SignatureHero.test.tsx`: FE-AA3 Fullscreen shader hero headline rendering, accessible CTA links, view mode switching, and reduced-motion fallback.
+- ✅ `CareerPath.test.tsx`: FE-AA2 3D / 2D tier rendering, level switching, keyboard navigation, and view mode toggles.
 - ✅ `ResumeOptimizer.test.tsx`: Form input validation, sample preset loading, structured JSON rendering, copy-to-clipboard, error state fallback.
 - ✅ `SkillGapAnalyzer.test.tsx`: Dynamic skill tag addition/removal, role benchmarking, roadmap rendering, error handling.
 - ✅ `AppShell.test.tsx`: WCAG skip-to-content anchor, landmark navigation elements, mobile drawer accessibility.
 - ✅ `MarkdownRenderer.test.tsx`: Markdown parsing, code syntax blocks, list formatting, bold/italics.
 - ✅ `coach-config.test.ts`: Environment model fallback, prompt integrity, hyperparameter safety.
 - ✅ `health.test.ts`: API route 200 response and JSON health payload validation.
-- ✅ `CareerPath.test.tsx`: FE-AA2 3D / 2D tier rendering, level switching, keyboard navigation, and view mode toggles.
 
 ---
 
