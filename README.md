@@ -103,21 +103,36 @@ careerforge/
 - **Prompt Engineering**: Uses structured behavioral coaching persona with STAR method (Situation, Task, Action, Result) enforcement, system design critique routines, and pre-token thinking animations.
 - **Resilience**: Client-side auto-scroll detection, stop-generation triggers, jump-to-latest button, and automatic retry banners on stream interruption.
 
-### 2. ATS Resume Bullet Optimizer (`/resume`)
-- **SDK**: `ai` (`generateText`) with strictly validated JSON output schema.
-- **Mechanism**: Converts passive bullet points (`"Worked on React bugs"`) into power statements (`"Architected frontend caching pipelines, reducing LCP by 42% and eliminating re-renders"`).
-- **Output Schema**:
-  ```json
-  {
-    "optimized": "Power Verb + Context + Quantified Metric",
-    "actionVerb": "Architected",
-    "metricAdded": "42% latency reduction",
-    "score": 94,
-    "feedback": "Concise coaching rationale",
-    "alternatives": ["Technical depth variation", "Scale variation"]
+### 2. ATS Resume Bullet Optimizer (`/resume`) — FE-07 Standard
+- **Tool Name**: `optimizeBullet` (Vercel AI SDK Server-Side Tool via `tool()`).
+- **Zod Input Schema**:
+  ```typescript
+  import { z } from "zod";
+
+  export const optimizeBulletInputSchema = z.object({
+    bullet: z.string().min(1, "Resume bullet point is required"),
+    targetRole: z.string().optional().default("Software Engineer"),
+    industry: z.string().optional().default("Tech"),
+  });
+  ```
+- **Execute Function & Fallback Behavior**: Executes live LLM transformation using Google Gemini JSON mode (`generateGeminiJson`) or OpenAI-compatible model (`generateText`), automatically falling back to high-fidelity deterministic heuristic power-verb generation if LLM services are unreachable.
+- **Return Shape**:
+  ```typescript
+  interface OptimizeBulletOutput {
+    optimized: string;    // Power Verb + Context + Quantified Impact
+    actionVerb: string;   // High-leverage power action verb
+    metricAdded: string;  // Quantified business/technical outcome metric
+    score: number;        // ATS Impact Score (0 - 100)
+    feedback: string;     // Concise coaching rationale
+    alternatives: string[]; // Variations for scale and technical depth
+    isFallback?: boolean; // Offline heuristic indicator flag
   }
   ```
-- **Resilience Fallback**: If LLM quota or connectivity fails, engages deterministic heuristic parsing engine ensuring zero broken user states.
+- **FE-07 Tool Lifecycle States**:
+  1. `input-streaming`: Displays active parameters being streamed into the `optimizeBullet` tool payload.
+  2. `input-available`: Displays validated input parameter chips while `optimizeBullet.execute()` runs.
+  3. `output-available`: Renders the high-impact **Optimization Complete / ATS Impact Score** component.
+  4. `output-error`: Renders a designed error card with a dedicated **Retry Tool Execution** action.
 
 ### 3. Competency Gap Analyzer (`/skills`)
 - **Mechanism**: Cross-references candidate skills against industry competency requirements for Senior Frontend AI, UI Architect, and Fullstack roles.

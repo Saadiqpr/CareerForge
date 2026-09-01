@@ -1,27 +1,34 @@
-import { generateText } from "ai";
+import { tool, generateText } from "ai";
+import { z } from "zod";
 import { getActiveLanguageModel, getAIProviderInfo } from "@/lib/ai/provider";
 import { generateGeminiJson } from "@/lib/ai/gemini";
 
 export const maxDuration = 30;
 
-interface OptimizeRequest {
-  bullet: string;
-  targetRole?: string;
-  industry?: string;
+// 1. Zod input schema for the server-side AI SDK tool
+export const optimizeBulletInputSchema = z.object({
+  bullet: z.string().min(1, "Resume bullet point is required"),
+  targetRole: z.string().optional().default("Software Engineer"),
+  industry: z.string().optional().default("Tech"),
+});
+
+export type OptimizeBulletInput = z.infer<typeof optimizeBulletInputSchema>;
+
+export interface OptimizeBulletOutput {
+  optimized: string;
+  actionVerb: string;
+  metricAdded: string;
+  score: number;
+  feedback: string;
+  alternatives: string[];
+  isFallback?: boolean;
 }
 
-export async function POST(req: Request) {
-  try {
-    const body: OptimizeRequest = await req.json();
-    const { bullet, targetRole = "Software Engineer", industry = "Tech" } = body;
-
-    if (!bullet || typeof bullet !== "string" || bullet.trim().length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Please provide a resume bullet point to optimize." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
+// 2. Server-side Vercel AI SDK Tool definition using tool()
+export const optimizeBullet = tool({
+  description: "Optimizes a resume bullet point for ATS impact, power verbs, and quantified metrics.",
+  parameters: optimizeBulletInputSchema,
+  execute: async ({ bullet, targetRole = "Software Engineer", industry = "Tech" }): Promise<OptimizeBulletOutput> => {
     const providerInfo = getAIProviderInfo();
 
     const prompt = `You are an expert technical resume coach and ATS optimization specialist.
@@ -53,18 +60,14 @@ Strictly return a valid JSON object with the following structure without markdow
         });
 
         const cleanJson = jsonStr.replace(/```json\n?|\n?```/g, "").trim();
-        const parsed = JSON.parse(cleanJson);
-        return new Response(JSON.stringify(parsed), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
+        return JSON.parse(cleanJson);
       } catch (geminiErr) {
-        console.error("Google Gemini resume optimize error, trying fallback model:", geminiErr);
+        console.error("Google Gemini tool execution error, trying fallback model:", geminiErr);
       }
     }
 
     // 2. AgentRouter / OpenAI Compatible
-    const { model, info } = getActiveLanguageModel();
+    const { model } = getActiveLanguageModel();
     if (model) {
       try {
         const result = await generateText({
@@ -74,13 +77,9 @@ Strictly return a valid JSON object with the following structure without markdow
         });
 
         const cleanJson = result.text.replace(/```json\n?|\n?```/g, "").trim();
-        const parsed = JSON.parse(cleanJson);
-        return new Response(JSON.stringify(parsed), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
+        return JSON.parse(cleanJson);
       } catch (aiErr) {
-        console.warn("AI generation failed, falling back to heuristic engine:", aiErr);
+        console.warn("AI generation tool execution failed, falling back to heuristic engine:", aiErr);
       }
     }
 
@@ -88,8 +87,8 @@ Strictly return a valid JSON object with the following structure without markdow
     const trimmed = bullet.trim();
     const actionVerbs = ["Architected", "Spearheaded", "Engineered", "Optimized", "Delivered", "Pioneered"];
     const selectedVerb = actionVerbs[Math.abs(trimmed.length) % actionVerbs.length];
-    
-    const fallbackResponse = {
+
+    return {
       optimized: `${selectedVerb} end-to-end ${targetRole.toLowerCase()} workflows, improving performance by 38% and reducing latency across critical services.`,
       actionVerb: selectedVerb,
       metricAdded: "38% performance improvement & reduced latency",
@@ -101,13 +100,111 @@ Strictly return a valid JSON object with the following structure without markdow
       ],
       isFallback: !providerInfo.isConfigured
     };
+  },
+});
 
-    return new Response(JSON.stringify(fallbackResponse), {
+export async function POST(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const simulateError = url.searchParams.get("simulateError") === "true";
+    const body = await req.json().catch(() => ({}));
+
+    const parsed = optimizeBulletInputSchema.safeParse(body);
+    if (!parsed.success) {
+      return new Response(
+        JSON.stringify({ error: "Please provide a resume bullet point to optimize." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const { bullet, targetRole, industry } = parsed.data;
+
+    // Check if caller requests standard JSON (e.g. legacy/testing) or tool event stream
+    const acceptHeader = req.headers.get("accept") || "";
+    const isDirectJson = acceptHeader.includes("application/json") && !acceptHeader.includes("application/x-ndjson");
+
+    if (isDirectJson && !simulateError) {
+      const result = await optimizeBullet.execute({ bullet, targetRole, industry }, { toolCallId: "call_optimizeBullet", messages: [] });
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // AI SDK Tool Lifecycle Stream (NDJSON)
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // State 1: input-streaming
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({
+                state: "input-streaming",
+                toolName: "optimizeBullet",
+                args: { bullet: bullet.slice(0, Math.ceil(bullet.length / 2)) },
+              }) + "\n"
+            )
+          );
+
+          await new Promise((r) => setTimeout(r, 60));
+
+          // State 2: input-available
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({
+                state: "input-available",
+                toolName: "optimizeBullet",
+                args: { bullet, targetRole, industry },
+              }) + "\n"
+            )
+          );
+
+          await new Promise((r) => setTimeout(r, 60));
+
+          if (simulateError) {
+            throw new Error("Simulated tool execution failure for optimizeBullet.");
+          }
+
+          // State 3: execute AI SDK tool
+          const result = await optimizeBullet.execute(
+            { bullet, targetRole, industry },
+            { toolCallId: "call_optimizeBullet", messages: [] }
+          );
+
+          // State 4: output-available
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({
+                state: "output-available",
+                toolName: "optimizeBullet",
+                result,
+              }) + "\n"
+            )
+          );
+        } catch (err: unknown) {
+          // State 4 (Error variant): output-error
+          controller.enqueue(
+            encoder.encode(
+              JSON.stringify({
+                state: "output-error",
+                toolName: "optimizeBullet",
+                error: err instanceof Error ? err.message : "Tool execution failed.",
+              }) + "\n"
+            )
+          );
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/x-ndjson", "Cache-Control": "no-cache" },
     });
   } catch (error) {
-    console.error("Resume optimizer error:", error);
+    console.error("Resume optimizer endpoint error:", error);
     return new Response(
       JSON.stringify({ error: "Failed to optimize resume bullet. Please try again." }),
       { status: 500, headers: { "Content-Type": "application/json" } }
