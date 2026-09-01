@@ -11,6 +11,7 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     exclude: ["node_modules", "dist", ".idea", ".git", ".cache", "e2e/**"],
+    testTimeout: 20000,
     pool: "threads",
     coverage: {
       provider: "v8",

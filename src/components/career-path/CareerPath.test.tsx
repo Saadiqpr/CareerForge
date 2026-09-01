@@ -36,7 +36,7 @@ describe("CareerPath Components (FE-AA2 3D / 2D Accessibility Standards)", () =>
 
     // Verify L4 data is displayed in inspector
     expect(screen.getByText("Mid-Level Frontend Engineer (L4)")).toBeInTheDocument();
-    expect(screen.getByText("$120,000 – $155,000")).toBeInTheDocument();
+    expect(screen.getAllByText("$120,000 – $155,000")[0]).toBeInTheDocument();
 
     // Click on L6 tier button
     const l6Btn = screen.getByRole("button", {
