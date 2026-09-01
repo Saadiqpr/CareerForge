@@ -1,9 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import AppShell from "@/components/AppShell";
 import { Compass, CheckCircle2, Circle, Plus, Award, Trash2, Zap, Trophy, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import CareerPathFallback from "@/components/career-path/CareerPathFallback";
+
+const CareerPathSection = dynamic(
+  () => import("@/components/career-path/CareerPathSection"),
+  {
+    ssr: false,
+    loading: () => <CareerPathFallback isFallbackModeNotice={false} />
+  }
+);
 
 interface Milestone {
   id: string;
@@ -155,6 +165,9 @@ export default function CareerPathPage() {
             </p>
           </div>
         </div>
+
+        {/* FE-AA2 3D Career Progression Constellation & Breakdown */}
+        <CareerPathSection initialLevelId="l5-senior" />
 
         {/* Milestones List Card */}
         <div className="rounded-3xl border border-white/[0.1] bg-[#0c1322]/80 backdrop-blur-xl p-5 sm:p-7 shadow-2xl space-y-5">

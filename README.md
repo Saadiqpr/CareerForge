@@ -158,6 +158,26 @@ careerforge/
 - **Mechanism**: Cross-references candidate skills against industry competency requirements for Senior Frontend AI, UI Architect, and Fullstack roles.
 - **Output Schema**: Match percentage, critical gap prioritization (High/Medium with impact rationale), and an 8-week structured roadmap with verifiable milestone deliverables.
 
+### 4. Interactive 3D Career Progression Constellation (`/career-path`) — FE-AA2 Specification
+- **3D Procedural Architecture**:
+  - `CareerPath3DCanvas.tsx`: Built with Three.js (`three`) using pure procedural geometries (Octahedron for L3, Icosahedron for L4, Dodecahedron beacon with orbital satellites for L5, and Hyper-structure crystal for Staff+) with zero external GLTF/GLB download overhead.
+  - `CareerPathFallback.tsx`: High-contrast, semantic 2D accessible fallback diagram supporting full keyboard navigation (`Tab`, `Enter`, `Space`), screen reader landmarks, and level inspector.
+  - `CareerPathSection.tsx`: Orchestrator managing bidirectional level selection, WebGL capability detection, and `prefers-reduced-motion` compliance.
+- **Three Career-Level Interactions**:
+  1. `Hover / Pointer-Over`: Raycasting dynamically detects hover over node hit-spheres, expanding the node scale (`lerp 1.0 -> 1.25`), accelerating orbital rings, intensifying core emissive glow, and displaying an interactive HUD tooltip.
+  2. `Click / Tap Selection`: Raycaster registers click or tap, initiating a smooth camera fly-to lerp transition towards the target node's 3D coordinates, activating the node's orbital halo, and synchronizing with the active tier inspector card.
+  3. `Orbit & Touch Navigation`: OrbitControls with inertia damping (`dampingFactor: 0.06`), polar angle clamps to prevent disorientation, auto-orbit rotation with smooth idle resumption, mobile touch drag / pinch-to-zoom / tap selection, and view reset actions.
+- **Performance & Optimization Strategy**:
+  - **Zero Unrelated Bundle Cost**: Dynamically imported via `next/dynamic` with `ssr: false` and `<CareerPathFallback />` skeleton loading, ensuring `/`, `/resume`, `/ai-coach`, and `/health` bundle 0 bytes of Three.js.
+  - **Lifecycle & IntersectionObserver**: Pauses the `requestAnimationFrame` loop automatically when the canvas scrolls out of viewport or when the browser tab is hidden (`document.hidden`), preventing GPU battery drain.
+  - **Frameloop Clamping & Bounded Resolution**: Clamps animation delta times to prevent frame jumps on tab return; caps `devicePixelRatio` at `Math.min(window.devicePixelRatio, 2)` for high-DPI retina devices.
+  - **Clean Memory Management**: Disposes all geometries, materials, tube curves, particle buffers, controls, and DOM event listeners on unmount.
+  - **Motion Sensitivity & Accessibility**: Auto-detects `prefers-reduced-motion: reduce` and defaults to the 2D accessible view while providing a manual 3D/2D switcher.
+- **What I'd add with more time**:
+  - Custom audio-reactive WebGL frequency ripple shaders when hovering over milestone nodes.
+  - User-customized milestone nodes projected dynamically into custom 3D orbit coordinates.
+  - WebXR spatial computing support for immersive VR/AR career roadmapping on Apple Vision Pro and Meta Quest.
+
 ---
 
 ## 🧪 Testing & Confidence
@@ -179,6 +199,7 @@ npm run test:coverage
 - ✅ `MarkdownRenderer.test.tsx`: Markdown parsing, code syntax blocks, list formatting, bold/italics.
 - ✅ `coach-config.test.ts`: Environment model fallback, prompt integrity, hyperparameter safety.
 - ✅ `health.test.ts`: API route 200 response and JSON health payload validation.
+- ✅ `CareerPath.test.tsx`: FE-AA2 3D / 2D tier rendering, level switching, keyboard navigation, and view mode toggles.
 
 ---
 
