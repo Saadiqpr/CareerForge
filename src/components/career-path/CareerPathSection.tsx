@@ -18,7 +18,6 @@ import {
   Sliders
 } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 interface CareerPathSectionProps {
   initialLevelId?: CareerLevelId;
@@ -225,25 +224,21 @@ export default function CareerPathSection({
                 Unlock <strong>{activeLevel.levelCode}</strong> qualifications in CareerForge:
               </span>
               <div className="flex items-center gap-2.5">
-                {activeLevel.actionLinks.map((link, i) => (
-                  <Button
-                    key={i}
-                    asChild
-                    size="sm"
-                    variant={link.variant === "primary" ? "default" : "outline"}
-                    className={
-                      link.variant === "primary"
-                        ? "gradient-btn text-xs font-bold rounded-xl h-9"
-                        : "border-white/[0.15] bg-white/[0.04] hover:bg-white/[0.08] text-xs font-bold rounded-xl h-9 text-slate-200"
-                    }
-                  >
-                    <Link href={link.href} className="flex items-center gap-1.5">
-                      <span>{link.label}</span>
-                      <ExternalLink className="h-3 w-3" />
-                    </Link>
-                  </Button>
-                ))}
-              </div>
+            {activeLevel.actionLinks.map((link, i) => (
+              <Link
+                key={i}
+                href={link.href}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-sm ${
+                  link.variant === "primary"
+                    ? "gradient-btn text-white"
+                    : "border border-white/[0.15] bg-white/[0.04] hover:bg-white/[0.08] text-slate-200"
+                }`}
+              >
+                <span>{link.label}</span>
+                <ExternalLink className="h-3 w-3" />
+              </Link>
+            ))}
+          </div>
             </div>
           </div>
         </div>

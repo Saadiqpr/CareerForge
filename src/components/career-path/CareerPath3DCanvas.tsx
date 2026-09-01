@@ -534,7 +534,9 @@ export default function CareerPath3DCanvas({
       state.renderer.render(state.scene, state.camera);
     };
 
-    state.animationFrameId = requestAnimationFrame(animate);
+    if (sceneStateRef.current) {
+      sceneStateRef.current.animationFrameId = requestAnimationFrame(animate);
+    }
 
     // 13. Cleanup on Unmount
     return () => {
