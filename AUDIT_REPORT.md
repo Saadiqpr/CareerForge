@@ -8,19 +8,28 @@
 
 ## 1. Lighthouse Audit Summary
 
-| Category | Mobile Score | Desktop Score | Target | Status |
-| :--- | :---: | :---: | :---: | :---: |
-| ⚡ **Performance** | **96 / 100** | **99 / 100** | $\ge 90$ | 🟢 **EXCELLENT** |
-| ♿ **Accessibility** | **100 / 100** | **100 / 100** | $\ge 90$ | 🟢 **PERFECT** |
-| 🛡️ **Best Practices** | **100 / 100** | **100 / 100** | $\ge 90$ | 🟢 **PERFECT** |
-| 🔍 **SEO** | **100 / 100** | **100 / 100** | $\ge 90$ | 🟢 **PERFECT** |
+### Lighthouse Mobile Baseline — Before Audit
 
-### Core Web Vitals Breakdown (Mobile Emulation - Moto G4 / Slow 4G)
-- **First Contentful Paint (FCP):** `0.8s` (Target $< 1.8\text{s}$)
-- **Largest Contentful Paint (LCP):** `1.2s` (Target $< 2.5\text{s}$)
-- **Cumulative Layout Shift (CLS):** `0.000` (Target $< 0.1$)
-- **Total Blocking Time (TBT):** `40ms` (Target $< 200\text{ms}$)
-- **Speed Index:** `1.1s` (Target $< 3.4\text{s}$)
+![Lighthouse Mobile Baseline — Before Audit](./public/screenshots/lighthouse-mobile-baseline.png)
+
+> **Note:** This baseline measurement was captured on the live deployed production homepage (`https://career-forge-kohl.vercel.app/`) prior to final audit optimization passes.
+
+- **Audited Target URL:** `https://career-forge-kohl.vercel.app/`
+- **Viewport:** Responsive `384 × 1188`
+- **Throttling:** No throttling
+- **Recorded Baseline Scores:**
+  - ⚡ **Performance:** `88 / 100`
+  - ♿ **Accessibility:** `100 / 100`
+  - 🛡️ **Best Practices:** `100 / 100`
+  - 🔍 **SEO:** `100 / 100`
+  - 🤖 **Agentic Browsing:** `2 / 2`
+
+| Category | Baseline Score | Target | Status |
+| :--- | :---: | :---: | :---: |
+| ⚡ **Performance** | **88 / 100** | $\ge 90$ | 🟡 **BASELINE** |
+| ♿ **Accessibility** | **100 / 100** | $\ge 90$ | 🟢 **PERFECT** |
+| 🛡️ **Best Practices** | **100 / 100** | $\ge 90$ | 🟢 **PERFECT** |
+| 🔍 **SEO** | **100 / 100** | $\ge 90$ | 🟢 **PERFECT** |
 
 ---
 
@@ -60,4 +69,4 @@ During the initial development run, our chat message stream in `ChatContainer.ts
    - Integrated an accessible `.sr-only focus:not-sr-only` bypass link at the top of the DOM tree, allowing keyboard-only users to bypass 7 sidebar navigation links directly to `#main-content`.
 
 ### Re-Audit Result:
-Accessibility score elevated from `88` to **`100 / 100`** on Google Lighthouse and clean pass on `axe-core`.
+Performance score elevated from `88` baseline towards target, maintaining **`100 / 100` Accessibility**, **`100 / 100` Best Practices**, **`100 / 100` SEO**, and clean pass on `axe-core`.
