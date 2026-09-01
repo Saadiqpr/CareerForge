@@ -25,10 +25,10 @@ export interface OptimizeBulletOutput {
 }
 
 // 2. Server-side Vercel AI SDK Tool definition using tool()
-export const optimizeBullet = tool({
+export const optimizeBullet: any = tool({
   description: "Optimizes a resume bullet point for ATS impact, power verbs, and quantified metrics.",
-  parameters: optimizeBulletInputSchema,
-  execute: async ({ bullet, targetRole = "Software Engineer", industry = "Tech" }) => {
+  parameters: optimizeBulletInputSchema as any,
+  execute: async ({ bullet, targetRole = "Software Engineer", industry = "Tech" }: OptimizeBulletInput): Promise<OptimizeBulletOutput> => {
     const providerInfo = getAIProviderInfo();
 
     const prompt = `You are an expert technical resume coach and ATS optimization specialist.
@@ -101,7 +101,7 @@ Strictly return a valid JSON object with the following structure without markdow
       isFallback: !providerInfo.isConfigured
     };
   },
-});
+} as any);
 
 export async function POST(req: Request) {
   try {
