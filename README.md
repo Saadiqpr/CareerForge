@@ -134,6 +134,22 @@ careerforge/
   3. `output-available`: Renders the high-impact **Optimization Complete / ATS Impact Score** component.
   4. `output-error`: Renders a designed error card with a dedicated **Retry Tool Execution** action.
 
+#### 🎨 Motion & State Micro-interaction System (FE-AA1 Specification)
+- **6 Handled Button States**:
+  1. `idle`: Resting state (`"Optimize Bullet"` + `<Sparkles />`) with cyan/emerald gradient and subtle depth shadow.
+  2. `hover`: Hardware-accelerated scale (`scale-[1.02]`), elevated shadow (`shadow-emerald-500/35`), and icon rotation.
+  3. `focus`: Accessible high-contrast keyboard focus ring (`focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2`).
+  4. `loading`: Smooth morph with a spinning loader (`<RefreshCw className="animate-spin" />`) while executing `optimizeBullet`.
+  5. `success`: Brief emerald success ring (`bg-emerald-600` + `<Check />` + `"Optimization Complete!"`).
+  6. `error`: Red error state (`bg-rose-600` + `<AlertCircle />` + `"Execution Failed — Retry"`) with a 0.4s horizontal keyframe shake (`animate-button-shake`).
+  7. `disabled`: Muted non-interactive state (`opacity-50 cursor-not-allowed`) when inputs are empty.
+- **Duration & Easing Rationale**:
+  - `300ms ease-out`: Used for state transitions (`idle` $\rightarrow$ `loading` $\rightarrow$ `success`/`error`) to match natural human visual perception without feeling sluggish.
+  - `150ms transform`: Instant tactile response for active press (`active:scale-95`).
+  - `400ms ease-in-out`: Used for the error shake animation to clearly signal failure without user disorientation.
+- **Performance & Compositor Safety**: Animates strictly hardware-accelerated compositor properties (`transform`, `opacity`) avoiding layout thrashing.
+- **Accessibility & Motion Preference**: Honors `prefers-reduced-motion` via `motion-reduce:animate-none motion-reduce:transform-none`, preserving full color and textual feedback while removing physical motion for sensitive users.
+
 ### 3. Competency Gap Analyzer (`/skills`)
 - **Mechanism**: Cross-references candidate skills against industry competency requirements for Senior Frontend AI, UI Architect, and Fullstack roles.
 - **Output Schema**: Match percentage, critical gap prioritization (High/Medium with impact rationale), and an 8-week structured roadmap with verifiable milestone deliverables.

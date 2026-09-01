@@ -218,22 +218,56 @@ export default function ResumeOptimizer() {
             <p className="text-xs text-slate-400">
               Evaluates power verbs, technical depth, and quantifiable business impact metrics via AI SDK tool.
             </p>
+            {/* FE-AA1 Choreographed Micro-interaction Button */}
             <Button
               type="submit"
-              disabled={!bullet.trim() || isLoading}
-              className="gap-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-bold px-6 h-11 rounded-xl shadow-lg shadow-emerald-500/25 transition-all"
+              disabled={!bullet.trim()}
+              data-state={
+                !bullet.trim()
+                  ? "disabled"
+                  : isLoading
+                  ? "loading"
+                  : toolState === "output-available"
+                  ? "success"
+                  : toolState === "output-error"
+                  ? "error"
+                  : "idle"
+              }
+              className={`relative overflow-hidden font-bold px-6 h-11 rounded-xl shadow-lg transition-all duration-300 ease-out transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c1322] motion-reduce:animate-none motion-reduce:transform-none motion-reduce:transition-none ${
+                !bullet.trim()
+                  ? "bg-slate-800 text-slate-500 cursor-not-allowed opacity-50 shadow-none border border-white/5"
+                  : isLoading
+                  ? "bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 text-white cursor-wait shadow-emerald-500/30 scale-[1.01]"
+                  : toolState === "output-available"
+                  ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/40 ring-2 ring-emerald-400/50"
+                  : toolState === "output-error"
+                  ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-500/40 animate-button-shake motion-reduce:animate-none"
+                  : "bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 hover:scale-[1.02] hover:shadow-emerald-500/35 text-white shadow-emerald-500/25"
+              }`}
             >
-              {isLoading ? (
-                <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  <span>Executing Tool...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  <span>Optimize Bullet</span>
-                </>
-              )}
+              <div className="flex items-center gap-2 transition-all duration-300">
+                {isLoading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin text-cyan-200 shrink-0" />
+                    <span>Executing Tool...</span>
+                  </>
+                ) : toolState === "output-available" ? (
+                  <>
+                    <Check className="h-4 w-4 text-emerald-200 shrink-0" />
+                    <span>Optimization Complete!</span>
+                  </>
+                ) : toolState === "output-error" ? (
+                  <>
+                    <AlertCircle className="h-4 w-4 text-rose-200 shrink-0" />
+                    <span>Execution Failed — Retry</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover:rotate-12" />
+                    <span>Optimize Bullet</span>
+                  </>
+                )}
+              </div>
             </Button>
           </div>
         </form>
@@ -329,7 +363,7 @@ export default function ResumeOptimizer() {
             <Button
               type="button"
               onClick={() => handleOptimize()}
-              className="gap-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-4 h-9 rounded-xl shadow-lg shadow-rose-500/20"
+              className="gap-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-4 h-9 rounded-xl shadow-lg shadow-rose-500/20 animate-button-shake motion-reduce:animate-none"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Retry Tool Execution</span>
