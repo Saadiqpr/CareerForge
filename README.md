@@ -143,6 +143,10 @@ careerforge/
   5. `success`: Brief emerald success ring (`bg-emerald-600` + `<Check />` + `"Optimization Complete!"`).
   6. `error`: Red error state (`bg-rose-600` + `<AlertCircle />` + `"Execution Failed — Retry"`) with a 0.4s horizontal keyframe shake (`animate-button-shake`).
   7. `disabled`: Muted non-interactive state (`opacity-50 cursor-not-allowed`) when inputs are empty.
+- **Reviewer Demo Triggers (On-Demand Verification)**:
+  - **`⚡ Live Stream`**: Default live AI SDK tool execution pipeline.
+  - **`✅ Force Success`**: Guarantees successful tool execution and displays the green checkmark state.
+  - **`❌ Force Failure (Shake Demo)`**: Instantly forces a tool execution failure (`output-error`), triggering the 0.4s button shake animation, red state morph, and retry button for easy reviewer evaluation.
 - **Duration & Easing Rationale**:
   - `300ms ease-out`: Used for state transitions (`idle` $\rightarrow$ `loading` $\rightarrow$ `success`/`error`) to match natural human visual perception without feeling sluggish.
   - `150ms transform`: Instant tactile response for active press (`active:scale-95`).

@@ -45,16 +45,17 @@ export default function ResumeOptimizer() {
   const [targetRole, setTargetRole] = useState<string>("Frontend AI Engineer");
   const [industry, setIndustry] = useState<string>("Tech & AI SaaS");
 
-  // FE-07 Tool Lifecycle State Management
+  // FE-07 & FE-AA1 Tool Lifecycle & Demo Mode State Management
   const [toolState, setToolState] = useState<ToolLifecycleState>("idle");
   const [toolArgs, setToolArgs] = useState<ToolArgs | null>(null);
   const [result, setResult] = useState<OptimizedResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [demoMode, setDemoMode] = useState<"normal" | "force-success" | "force-error">("normal");
 
   const isLoading = toolState === "input-streaming" || toolState === "input-available";
 
-  const handleOptimize = async (e?: React.FormEvent) => {
+  const handleOptimize = async (e?: React.FormEvent, forceSimulateError?: boolean) => {
     if (e) e.preventDefault();
     if (!bullet.trim()) return;
 
@@ -63,8 +64,11 @@ export default function ResumeOptimizer() {
     setToolState("input-streaming");
     setToolArgs({ bullet: bullet.trim().slice(0, Math.ceil(bullet.length / 2)), targetRole, industry });
 
+    const shouldError = forceSimulateError !== undefined ? forceSimulateError : demoMode === "force-error";
+    const endpoint = shouldError ? "/api/resume-optimize?simulateError=true" : "/api/resume-optimize";
+
     try {
-      const res = await fetch("/api/resume-optimize", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bullet: bullet.trim(), targetRole, industry }),
@@ -148,6 +152,50 @@ export default function ResumeOptimizer() {
             <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
             <span>AI SDK Tool: optimizeBullet</span>
           </span>
+        </div>
+
+        {/* FE-AA1 Reviewer Demo Trigger Controls */}
+        <div className="flex flex-wrap items-center gap-2 mb-5 p-3 rounded-2xl border border-white/[0.08] bg-white/[0.02]">
+          <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5 mr-1">
+            <Zap className="h-3.5 w-3.5 text-cyan-400" />
+            <span>FE-AA1 Demo Triggers:</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => setDemoMode("normal")}
+            className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
+              demoMode === "normal"
+                ? "bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 font-semibold shadow-sm shadow-cyan-500/20"
+                : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            ⚡ Live Stream
+          </button>
+          <button
+            type="button"
+            onClick={() => setDemoMode("force-success")}
+            className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
+              demoMode === "force-success"
+                ? "bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 font-semibold shadow-sm shadow-emerald-500/20"
+                : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            ✅ Force Success
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setDemoMode("force-error");
+              handleOptimize(undefined, true);
+            }}
+            className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-all ${
+              demoMode === "force-error"
+                ? "bg-rose-500/20 border border-rose-500/50 text-rose-300 font-semibold shadow-sm shadow-rose-500/20"
+                : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            ❌ Force Failure (Shake Demo)
+          </button>
         </div>
 
         {/* Preset Sample Prompts */}
@@ -340,7 +388,7 @@ export default function ResumeOptimizer() {
       {toolState === "output-error" && (
         <div
           data-testid="tool-state-output-error"
-          className="rounded-3xl border border-rose-500/40 bg-rose-950/30 backdrop-blur-xl p-5 sm:p-6 shadow-2xl space-y-4"
+          className="rounded-3xl border border-rose-500/40 bg-rose-950/30 backdrop-blur-xl p-5 sm:p-6 shadow-2xl space-y-4 animate-button-shake motion-reduce:animate-none"
           role="alert"
         >
           <div className="flex items-center justify-between border-b border-rose-500/20 pb-3">
@@ -362,7 +410,7 @@ export default function ResumeOptimizer() {
           <div className="flex items-center justify-end pt-1">
             <Button
               type="button"
-              onClick={() => handleOptimize()}
+              onClick={() => handleOptimize(undefined, false)}
               className="gap-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-4 h-9 rounded-xl shadow-lg shadow-rose-500/20 animate-button-shake motion-reduce:animate-none"
             >
               <RotateCcw className="h-3.5 w-3.5" />
