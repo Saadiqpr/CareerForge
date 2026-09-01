@@ -27,8 +27,9 @@ export interface OptimizeBulletOutput {
 // 2. Server-side Vercel AI SDK Tool definition using tool()
 export const optimizeBullet = tool({
   description: "Optimizes a resume bullet point for ATS impact, power verbs, and quantified metrics.",
+  inputSchema: optimizeBulletInputSchema,
   parameters: optimizeBulletInputSchema,
-  execute: async ({ bullet, targetRole = "Software Engineer", industry = "Tech" }): Promise<OptimizeBulletOutput> => {
+  execute: async ({ bullet, targetRole = "Software Engineer", industry = "Tech" }: OptimizeBulletInput): Promise<OptimizeBulletOutput> => {
     const providerInfo = getAIProviderInfo();
 
     const prompt = `You are an expert technical resume coach and ATS optimization specialist.
@@ -123,8 +124,10 @@ export async function POST(req: Request) {
     const acceptHeader = req.headers.get("accept") || "";
     const isDirectJson = acceptHeader.includes("application/json") && !acceptHeader.includes("application/x-ndjson");
 
+    const execOptions = { toolCallId: "call_optimizeBullet", messages: [] as any[], context: {} as any };
+
     if (isDirectJson && !simulateError) {
-      const result = await optimizeBullet.execute({ bullet, targetRole, industry }, { toolCallId: "call_optimizeBullet", messages: [] });
+      const result = await optimizeBullet.execute({ bullet, targetRole, industry }, execOptions);
       return new Response(JSON.stringify(result), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -169,7 +172,7 @@ export async function POST(req: Request) {
           // State 3: execute AI SDK tool
           const result = await optimizeBullet.execute(
             { bullet, targetRole, industry },
-            { toolCallId: "call_optimizeBullet", messages: [] }
+            execOptions
           );
 
           // State 4: output-available
