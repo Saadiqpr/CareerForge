@@ -57,7 +57,7 @@ describe("ResumeOptimizer Component (FE-07 AI SDK Tool Flow)", () => {
       expect(screen.getByTestId("tool-state-output-available")).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/Optimization Complete/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Optimization Complete/i })).toBeInTheDocument();
     expect(screen.getByText(/94\/100/i)).toBeInTheDocument();
     expect(screen.getByText(/Architected and deployed enterprise AI assistant/i)).toBeInTheDocument();
     expect(screen.getByText("Architected")).toBeInTheDocument();

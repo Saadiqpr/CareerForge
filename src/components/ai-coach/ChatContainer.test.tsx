@@ -54,7 +54,7 @@ describe("ChatContainer Component (AI Coach Chat)", () => {
 
     // Pending / thinking indicator should render
     await waitFor(() => {
-      expect(screen.getByText(/Formulating technical career guidance/i)).toBeInTheDocument();
+      expect(screen.getByText(/Formulating coaching strategy/i)).toBeInTheDocument();
     });
   });
 

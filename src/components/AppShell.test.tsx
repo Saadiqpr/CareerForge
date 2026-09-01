@@ -28,7 +28,7 @@ describe("AppShell Component (WCAG 2.1 AA Compliance)", () => {
     );
 
     expect(screen.getByText("CareerForge")).toBeInTheDocument();
-    expect(screen.getByText("Resume Studio")).toBeInTheDocument();
+    expect(screen.getAllByText("Resume Studio")[0]).toBeInTheDocument();
     expect(screen.getByText("Page Body")).toBeInTheDocument();
   });
 });
