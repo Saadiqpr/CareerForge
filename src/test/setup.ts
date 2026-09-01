@@ -19,6 +19,20 @@ if (typeof window !== "undefined") {
   if (window.HTMLElement) {
     window.HTMLElement.prototype.scrollTo = vi.fn();
   }
+
+  class MockResizeObserver {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  }
+  window.ResizeObserver = window.ResizeObserver || (MockResizeObserver as unknown as typeof ResizeObserver);
+
+  class MockIntersectionObserver {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  }
+  window.IntersectionObserver = window.IntersectionObserver || (MockIntersectionObserver as unknown as typeof IntersectionObserver);
 }
 
 if (typeof navigator !== "undefined") {

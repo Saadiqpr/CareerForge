@@ -4,6 +4,16 @@ import CareerPathFallback from "./CareerPathFallback";
 import CareerPathSection from "./CareerPathSection";
 import { CAREER_LEVELS } from "./types";
 
+// Mock 3D WebGL Canvas in JSDOM unit test environment
+vi.mock("./CareerPath3DCanvas", () => ({
+  default: ({ selectedLevelId, onSelectLevel }: { selectedLevelId: string; onSelectLevel: (id: string) => void }) => (
+    <div data-testid="mock-3d-canvas">
+      <span>3D Canvas Mock ({selectedLevelId})</span>
+      <button onClick={() => onSelectLevel("l4-mid")}>Select L4 in 3D</button>
+    </div>
+  ),
+}));
+
 describe("CareerPath Components (FE-AA2 3D / 2D Accessibility Standards)", () => {
   it("renders all 4 career tiers in 2D accessible fallback view", () => {
     render(<CareerPathFallback selectedLevelId="l5-senior" />);

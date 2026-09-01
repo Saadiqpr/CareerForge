@@ -12,11 +12,6 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     exclude: ["node_modules", "dist", ".idea", ".git", ".cache", "e2e/**"],
     pool: "threads",
-    poolOptions: {
-      threads: {
-        singleThread: true,
-      },
-    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
